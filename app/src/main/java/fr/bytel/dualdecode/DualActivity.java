@@ -31,7 +31,7 @@ public class DualActivity extends Activity {
 
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
-        if (keyCode == KeyEvent.KEYCODE_DPAD_CENTER && (dualDecodeTest == null || !dualDecodeTest.mStarted)) {
+        if (keyCode == KeyEvent.KEYCODE_DPAD_CENTER && (dualDecodeTest == null || !dualDecodeTest.testStarted)) {
             TextView tv = findViewById(R.id.timer_text);
             tv.setText("");
             dualDecodeTest = new AdReplacer(findViewById(R.id.ad_surface_container));

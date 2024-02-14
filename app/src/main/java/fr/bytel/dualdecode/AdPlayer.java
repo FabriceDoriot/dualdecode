@@ -1,7 +1,6 @@
 package fr.bytel.dualdecode;
 
-import static com.google.android.exoplayer2.DefaultLoadControl.DEFAULT_MAX_BUFFER_MS;
-
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
@@ -9,26 +8,23 @@ import android.text.TextUtils;
 import android.view.SurfaceView;
 import android.view.View;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-
-import com.google.android.exoplayer2.C;
-import com.google.android.exoplayer2.DefaultLoadControl;
-import com.google.android.exoplayer2.DefaultRenderersFactory;
-import com.google.android.exoplayer2.ExoPlayer;
-import com.google.android.exoplayer2.ExoPlayerLibraryInfo;
-import com.google.android.exoplayer2.MediaItem;
-import com.google.android.exoplayer2.PlaybackException;
-import com.google.android.exoplayer2.Player;
-import com.google.android.exoplayer2.source.LoadEventInfo;
-import com.google.android.exoplayer2.source.MediaLoadData;
-import com.google.android.exoplayer2.source.MediaSource;
-import com.google.android.exoplayer2.source.MediaSource.MediaPeriodId;
-import com.google.android.exoplayer2.source.MediaSourceEventListener;
-import com.google.android.exoplayer2.source.hls.HlsMediaSource;
-import com.google.android.exoplayer2.trackselection.DefaultTrackSelector;
-import com.google.android.exoplayer2.upstream.DefaultBandwidthMeter;
-import com.google.android.exoplayer2.upstream.DefaultHttpDataSource;
-import com.google.android.exoplayer2.util.Log;
+import androidx.media3.common.C;
+import androidx.media3.common.MediaItem;
+import androidx.media3.common.MediaLibraryInfo;
+import androidx.media3.common.PlaybackException;
+import androidx.media3.common.Player;
+import androidx.media3.common.util.Log;
+import androidx.media3.datasource.DefaultHttpDataSource;
+import androidx.media3.exoplayer.*;
+import androidx.media3.exoplayer.hls.HlsMediaSource;
+import androidx.media3.exoplayer.source.LoadEventInfo;
+import androidx.media3.exoplayer.source.MediaLoadData;
+import androidx.media3.exoplayer.source.MediaSource;
+import androidx.media3.exoplayer.source.MediaSourceEventListener;
+import androidx.media3.exoplayer.trackselection.DefaultTrackSelector;
+import androidx.media3.exoplayer.upstream.DefaultBandwidthMeter;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -38,14 +34,14 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
+@SuppressLint("UnsafeOptInUsageError")
 public final class AdPlayer implements Player.Listener {
     private static final String LOG_TAG = "AdPlayer";
     private final Handler mEventHandler;
     private final ExoPlayer mPlayer;
-    private final DefaultTrackSelector mTrackSelector;
     private final DefaultBandwidthMeter mBandwidthMeter;
+    private final SurfaceView mSurfaceView;
     private boolean mPlaying;
-    private SurfaceView mSurfaceView;
     private String mNotifiedEndId = null;
     private String mPreviousMediaId = null;
     private String mPlayingMediaId  = null;
@@ -54,14 +50,14 @@ public final class AdPlayer implements Player.Listener {
     private final Set<String> _waitStartedItems = new HashSet<>();
     private final Set<String> _waitReadyItems = new HashSet<>();
 
-    public AdPlayer() {
+    public AdPlayer(SurfaceView surfaceView) {
         Log.setLogLevel(Log.LOG_LEVEL_ALL);
         Context appContext = DualActivity.getAppContext();
         mEventHandler = new Handler(Looper.getMainLooper());
         mBandwidthMeter = new DefaultBandwidthMeter.Builder(appContext).build();
-        mTrackSelector = new DefaultTrackSelector(appContext);
+        DefaultTrackSelector mTrackSelector = new DefaultTrackSelector(appContext);
         DefaultLoadControl loadControl = new DefaultLoadControl.Builder().
-                setBufferDurationsMs(4000,DEFAULT_MAX_BUFFER_MS, 1500,0).build();
+                setBufferDurationsMs(4000,1400, 1500,0).build();
         DefaultRenderersFactory renderersFactory = new DefaultRenderersFactory(appContext).
                 forceEnableMediaCodecAsynchronousQueueing().
                 setEnableDecoderFallback(true);
@@ -72,6 +68,8 @@ public final class AdPlayer implements Player.Listener {
                 setTrackSelector(mTrackSelector).
                 setLoadControl(loadControl).build();
         mPlayer.addListener(this);
+        mPlayer.setVideoSurfaceView(surfaceView);
+        mSurfaceView = surfaceView;
     }
 
     void setPlaylist(List<Ad> ads) {
@@ -80,7 +78,7 @@ public final class AdPlayer implements Player.Listener {
             final List<MediaSource> adList = new LinkedList<>();
             DefaultHttpDataSource.Factory httpDataSourceFactory = new DefaultHttpDataSource.Factory().
                     setTransferListener(mBandwidthMeter).
-                    setUserAgent(ExoPlayerLibraryInfo.VERSION_SLASHY);
+                    setUserAgent(MediaLibraryInfo.VERSION_SLASHY);
             MediaSource.Factory hlsFct = new HlsMediaSource.Factory(httpDataSourceFactory);
             for (Ad ad : ads) {
                 _waitReadyItems.add(ad.mediaId);
@@ -107,39 +105,32 @@ public final class AdPlayer implements Player.Listener {
 
     void showAdSurface() {
         Utils.runInLooperThread(mEventHandler,()-> {
-            if (mSurfaceView != null) {
-                logD("showAdSurface");
-                mSurfaceView.setVisibility(View.VISIBLE);
-                logSurface();
-            }
+            logD("showAdSurface");
+            mSurfaceView.setVisibility(View.VISIBLE);
+            logSurface();
         });
     }
 
     void hideAdSurface() {
         Utils.runInLooperThread(mEventHandler,()-> {
-            if (mSurfaceView != null) {
-                logD("hideAdSurface");
-                mSurfaceView.setVisibility(View.INVISIBLE);
-                logSurface();
-            }
+            logD("hideAdSurface");
+            mSurfaceView.setVisibility(View.INVISIBLE);
+            logSurface();
         });
     }
 
     private void logSurface() {
-        if (mSurfaceView != null) {
-            boolean isValid =
-                    mSurfaceView.getHolder().getSurface() != null &&
-                            mSurfaceView.getHolder().getSurface().isValid();
-            logV("surface.valid =" + isValid);
-            logV("surface.vs =" + mSurfaceView.getVisibility());
-        }
+        boolean isValid =
+                mSurfaceView.getHolder().getSurface() != null &&
+                        mSurfaceView.getHolder().getSurface().isValid();
+        logV("surface.valid =" + isValid);
+        logV("surface.vs =" + mSurfaceView.getVisibility());
     }
 
     public void release() {
         Utils.runInLooperThread(mEventHandler,()->{
             mPlayer.stop();
             hideAdSurface();
-            mSurfaceView = null;
             mPlayer.removeListener(this);
             synchronized (mListeners) {
                 mListeners.clear();
@@ -195,11 +186,11 @@ public final class AdPlayer implements Player.Listener {
 
     @Override
     public void onMediaItemTransition(@Nullable MediaItem mediaItem, int reason) {
-        logD("onMediaItemTransition "+mediaItem.mediaId+", reason="+reason);
+        logD("onMediaItemTransition "+(mediaItem == null ? "null " : mediaItem.mediaId)+", reason="+reason);
     }
 
     @Override
-    public void onPositionDiscontinuity(Player.PositionInfo oldPosition, Player.PositionInfo newPosition, int reason) {
+    public void onPositionDiscontinuity(@NonNull Player.PositionInfo oldPosition, @NonNull Player.PositionInfo newPosition, int reason) {
         logD("onPositionDiscontinuity "+reason);
         if(reason == Player.DISCONTINUITY_REASON_AUTO_TRANSITION &&
                 oldPosition.mediaItem != null && newPosition.mediaItem != null &&
@@ -253,7 +244,7 @@ public final class AdPlayer implements Player.Listener {
     }
 
     void notifyError(int errorCode, String errorMessage, String mediaId) {
-        logW("notifyError code="+errorCode+", mediaId="+mediaId, null);
+        logW("notifyError code="+errorCode+", mediaId="+mediaId);
         final List<AdPlayerListener> listeners = getListeners(mediaId);
         for (AdPlayerListener listener : listeners) {
             listener.onPlaybackError(errorCode, errorMessage);
@@ -292,13 +283,6 @@ public final class AdPlayer implements Player.Listener {
         return listeners;
     }
 
-    public void setSurfaceView(final SurfaceView surface) {
-        if (mSurfaceView != surface) {
-            mSurfaceView = surface;
-            Utils.runInLooperThread(mEventHandler, ()->mPlayer.setVideoSurfaceView(mSurfaceView));
-        }
-    }
-
     private String logTag() {
         return LOG_TAG + "("+mCurrentMediaId+")";
     }
@@ -311,8 +295,8 @@ public final class AdPlayer implements Player.Listener {
         Log.i(logTag(), logMessage);
     }
 
-    private void logW(String logMessage, Throwable error) {
-        Log.w(logTag(), logMessage, error);
+    private void logW(String logMessage) {
+        Log.w(logTag(), logMessage, null);
     }
 
     private static final class MSEventListener implements MediaSourceEventListener {
@@ -325,7 +309,8 @@ public final class AdPlayer implements Player.Listener {
         }
 
         @Override
-        public void onLoadCompleted(int windowIndex, @Nullable MediaPeriodId mediaPeriodId, LoadEventInfo loadEventInfo, MediaLoadData mediaLoadData) {
+        public void onLoadCompleted(int windowIndex, @Nullable MediaSource.MediaPeriodId mediaPeriodId,
+                                    @NonNull LoadEventInfo loadEventInfo, @NonNull MediaLoadData mediaLoadData) {
             session.onLoadCompleted(mediaLoadData, mediaId);
         }
     }

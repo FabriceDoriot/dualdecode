@@ -1,17 +1,18 @@
 package fr.bytel.dualdecode;
 
+import android.annotation.SuppressLint;
 import android.util.Log;
 
-
-import com.google.android.exoplayer2.mediacodec.MediaCodecInfo;
-import com.google.android.exoplayer2.mediacodec.MediaCodecSelector;
-import com.google.android.exoplayer2.mediacodec.MediaCodecUtil;
+import androidx.media3.exoplayer.mediacodec.MediaCodecInfo;
+import androidx.media3.exoplayer.mediacodec.MediaCodecSelector;
+import androidx.media3.exoplayer.mediacodec.MediaCodecUtil;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
 
 // Custom MediaCodecSelector implementations to force using specific Broadcom video decoders
+@SuppressLint("UnsafeOptInUsageError")
 public interface BcmMediaCodecSelector extends MediaCodecSelector {
     String LOG_TAG = "BcmMediaCodecUtil";
     String broadcom_r = "bcm";

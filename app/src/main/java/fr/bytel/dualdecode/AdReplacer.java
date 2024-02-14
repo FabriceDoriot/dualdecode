@@ -14,27 +14,28 @@ import java.util.List;
 import java.util.TreeSet;
 
 public class AdReplacer implements AdPlayerListener {
-    final protected Handler handler = new Handler(Looper.getMainLooper());
-    private long testStartTime;
-    private TextView mTimerText;
-    private TextView mTimestampText;
-
     private static final String LOG_TAG = "DualDecode.Ads";
+    private static final Handler handler = new Handler(Looper.getMainLooper());
+    private final TextView mTimerText;
+    private final TextView mTimestampText;
     private final RelativeLayout mVideoContainer;
     private final TreeSet<Ad> mAdCalls = new TreeSet<>();
-    private AdPlayer adPlayer;
     private final Runnable displayTimeRunnable = this::displayTime;
-    public static boolean mStarted;
-
     private static final String[] urls = {
             "https://bytel-ads-sample.s3.eu-west-3.amazonaws.com/creatives/cdn_20s/AD_FTV_PUB_LIVE1473518/asSbTHcbw8Blo5UtpiNR.m3u8",
             "https://bytel-ads-sample.s3.eu-west-3.amazonaws.com/creatives/cdn_15s/AD_FTV_PUB_LIVE1471518/rwXnlmkxCFOEKEFwiWR0.m3u8"
     };
     private static final int[] durations = {20000, 15000};
     private static int url_idx = 0;
+    static boolean testStarted;
+
+    private AdPlayer adPlayer;
+    private long testStartTime;
 
     public AdReplacer(RelativeLayout videoContainer) {
         mVideoContainer = videoContainer;
+        mTimerText = videoContainer.getRootView().findViewById(R.id.timer_text);
+        mTimestampText = videoContainer.getRootView().findViewById(R.id.timestamp_text);
         start();
     }
 
@@ -56,11 +57,10 @@ public class AdReplacer implements AdPlayerListener {
     }
 
     void start() {
-        if (mStarted) return;
-        mStarted = true;
+        if (testStarted) return;
+        testStarted = true;
         Log.w(LOG_TAG, "******* start ******");
-        adPlayer = new AdPlayer();
-        adPlayer.setSurfaceView(createAdSurface());
+        adPlayer = new AdPlayer(createAdSurface());
         adPlayer.hideAdSurface();
         adPlayer.addListener(this);
         handler.postDelayed(()-> addAds(1, 2), 1000);
@@ -98,8 +98,8 @@ public class AdReplacer implements AdPlayerListener {
     }
 
     public void stop() {
-        if (!mStarted) return;
-        mStarted = false;
+        if (!testStarted) return;
+        testStarted = false;
         Log.w(LOG_TAG, "******* stop *******");
         handler.removeCallbacksAndMessages(null);
         final TreeSet<Ad> adCalls = new TreeSet<>(mAdCalls);
@@ -109,8 +109,6 @@ public class AdReplacer implements AdPlayerListener {
             }
         }
         stopDisplay();
-        adPlayer.setSurfaceView(null);
-        adPlayer.removeListener(this);
         adPlayer.release();
         adPlayer = null;
         handler.post(mVideoContainer::removeAllViews);
@@ -119,8 +117,6 @@ public class AdReplacer implements AdPlayerListener {
     protected void startDisplay(View container) {
         if (container != null) {
             testStartTime = System.nanoTime();
-            mTimerText = container.getRootView().findViewById(R.id.timer_text);
-            mTimestampText = container.getRootView().findViewById(R.id.timestamp_text);
             handler.post(displayTimeRunnable);
         }
     }
