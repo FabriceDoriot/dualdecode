@@ -25,13 +25,27 @@ public class DualActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
+        displayWelcomeText();
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        if (dualDecodeTest != null) {
+            dualDecodeTest.stop();
+        }
+    }
+
+    public void displayWelcomeText() {
         TextView tv = findViewById(R.id.timer_text);
         tv.setText("press OK to start");
+        tv = findViewById(R.id.timestamp_text);
+        tv.setText("");
     }
 
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
-        if (keyCode == KeyEvent.KEYCODE_DPAD_CENTER && (dualDecodeTest == null || !dualDecodeTest.testStarted)) {
+        if (keyCode == KeyEvent.KEYCODE_DPAD_CENTER && (dualDecodeTest == null || !AdReplacer.testStarted)) {
             TextView tv = findViewById(R.id.timer_text);
             tv.setText("");
             dualDecodeTest = new AdReplacer(findViewById(R.id.ad_surface_container));

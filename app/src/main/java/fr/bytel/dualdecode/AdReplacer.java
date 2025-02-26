@@ -22,10 +22,10 @@ public class AdReplacer implements AdPlayerListener {
     private final TreeSet<Ad> mAdCalls = new TreeSet<>();
     private final Runnable displayTimeRunnable = this::displayTime;
     private static final String[] urls = {
-            "https://bytel-ads-sample.s3.eu-west-3.amazonaws.com/creatives/cdn_20s/AD_FTV_PUB_LIVE1473518/asSbTHcbw8Blo5UtpiNR.m3u8",
-            "https://bytel-ads-sample.s3.eu-west-3.amazonaws.com/creatives/cdn_15s/AD_FTV_PUB_LIVE1471518/rwXnlmkxCFOEKEFwiWR0.m3u8"
+            "https://adstreaming.bouygtel.fr:14443/shls/AD_TF1_PUB_FR_GOAN_EMRG_LBML_0002_020_F/index.m3u8?device=HLS_DAI&client_version=3&appid=00140040275",
+            "https://adstreaming.bouygtel.fr:14443/shls/AD_TF1_PUB_FR_FOCN_CROL_EAUX_0004_020_F/index.m3u8?device=HLS_DAI&client_version=3&appid=00140040275"
     };
-    private static final int[] durations = {20000, 15000};
+    private static final int[] durations = {20000, 20000};
     private static int url_idx = 0;
     static boolean testStarted;
 
@@ -63,8 +63,8 @@ public class AdReplacer implements AdPlayerListener {
         adPlayer = new AdPlayer(createAdSurface());
         adPlayer.hideAdSurface();
         adPlayer.addListener(this);
-        handler.postDelayed(()-> addAds(1, 2), 1000);
-        handler.postDelayed(this::stop, 150000);
+        handler.postDelayed(()-> addAds(1, 2), 100);
+        handler.postDelayed(this::stop, 90000);
     }
 
     private SurfaceView createAdSurface() {
@@ -79,7 +79,7 @@ public class AdReplacer implements AdPlayerListener {
     private void addAds(final int fromSeqNum, final int toSeqNum) {
         List<Ad> playList = new ArrayList<>();
         long now = System.currentTimeMillis();
-        long start = now+5000;
+        long start = now+2000;
         for (int seqNum = fromSeqNum; seqNum<=toSeqNum; seqNum++) {
             String url = urls[url_idx % urls.length];
             int duration = durations[url_idx % durations.length];
@@ -90,7 +90,7 @@ public class AdReplacer implements AdPlayerListener {
             long systemTimeAtPTS = start + Ad.PLAYER_SHOW_MARGIN_MS;
             ad.systemTimeMsAtPTS = systemTimeAtPTS;
             handler.postDelayed(ad, start-now);
-            start = systemTimeAtPTS + ad.duration+5000 - Ad.PLAYER_SHOW_MARGIN_MS;
+            start = systemTimeAtPTS + ad.duration+500 - Ad.PLAYER_SHOW_MARGIN_MS;
             url_idx++;
         }
         adPlayer.setPlaylist(playList);
@@ -112,6 +112,7 @@ public class AdReplacer implements AdPlayerListener {
         adPlayer.release();
         adPlayer = null;
         handler.post(mVideoContainer::removeAllViews);
+        ((DualActivity)mVideoContainer.getContext()).displayWelcomeText();
     }
 
     protected void startDisplay(View container) {

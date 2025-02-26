@@ -2,8 +2,12 @@ package fr.bytel.dualdecode;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.media.AudioManager;
+import android.media.AudioMixerAttributes;
+import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
+import android.provider.Settings;
 import android.text.TextUtils;
 import android.view.SurfaceView;
 import android.view.View;
@@ -15,6 +19,8 @@ import androidx.media3.common.MediaItem;
 import androidx.media3.common.MediaLibraryInfo;
 import androidx.media3.common.PlaybackException;
 import androidx.media3.common.Player;
+import androidx.media3.common.audio.AudioMixingUtil;
+import androidx.media3.common.audio.AudioProcessor;
 import androidx.media3.common.util.Log;
 import androidx.media3.datasource.DefaultHttpDataSource;
 import androidx.media3.exoplayer.*;
@@ -57,11 +63,11 @@ public final class AdPlayer implements Player.Listener {
         mBandwidthMeter = new DefaultBandwidthMeter.Builder(appContext).build();
         DefaultTrackSelector mTrackSelector = new DefaultTrackSelector(appContext);
         DefaultLoadControl loadControl = new DefaultLoadControl.Builder().
-                setBufferDurationsMs(4000,1400, 1500,0).build();
+                setBufferDurationsMs(40000,40000, 1500,0).build();
         DefaultRenderersFactory renderersFactory = new DefaultRenderersFactory(appContext).
                 forceEnableMediaCodecAsynchronousQueueing().
                 setEnableDecoderFallback(true);
-        renderersFactory.setMediaCodecSelector(BcmMediaCodecSelector.BCM_VIDEO_REDUX);
+        //renderersFactory.setMediaCodecSelector(BcmMediaCodecSelector.BCM_VIDEO_REDUX);
         mPlayer = new ExoPlayer.Builder(appContext, renderersFactory).
                 setLooper(mEventHandler.getLooper()).
                 setBandwidthMeter(mBandwidthMeter).
